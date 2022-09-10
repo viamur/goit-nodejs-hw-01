@@ -7,11 +7,12 @@ const argv = yargs(hideBin(process.argv)).argv;
 async function invokeAction({ action, id, name, email, phone }) {
   switch (action) {
     case 'list':
-      listContacts();
+      const list = await listContacts();
+      console.table(list);
       break;
 
     case 'get':
-      const getData = getContactById(id);
+      const getData = await getContactById(id);
       console.log(getData);
       break;
 

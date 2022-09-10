@@ -1,34 +1,47 @@
 const fs = require('fs').promises;
-const fsSync = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const contactsPath = path.join(__dirname, 'db/contacts.json');
-const contacts = JSON.parse(fsSync.readFileSync(contactsPath));
+const contactsParse = async () => {
+  try {
+    const contacts = await fs.readFile(contactsPath);
+    return JSON.parse(contacts);
+  } catch (error) {
+    return console.error(error);
+  }
+};
 
-function listContacts() {
-  console.table(contacts);
+async function listContacts() {
+  const contactsList = await contactsParse();
+  return contactsList;
 }
 
-function getContactById(contactId) {
-  const index = contacts.findIndex(contact => contact.id === contactId.toString());
+async function getContactById(contactId) {
+  const contactsList = await contactsParse();
+
+  const index = contactsList.findIndex(({ id }) => id === contactId.toString());
 
   if (index === -1) {
-    return `no contact found with this id: ${contactId}`;
+    throw new Error(`no contact found with this id: ${contactId}`);
   }
-  return contacts[index];
+  return contactsList[index];
 }
 
 async function removeContact(contactId) {
   try {
-    const index = contacts.findIndex(contact => contact.id === contactId.toString());
+    const contactsList = await contactsParse();
+
+    const index = contactsList.findIndex(({ id }) => id === contactId.toString());
     if (index === -1) {
-      return `no contact found with this id: ${contactId}`;
+      throw new Error(`no contact found with this id: ${contactId}`);
     }
-    const newContacts = contacts.splice(index, 1);
-    const convertedContact = JSON.stringify(contacts, null, 2);
-    await fs.writeFile(contactsPath, convertedContact);
-    return newContacts;
+    const delContact = contactsList.splice(index, 1);
+
+    const convertedContact = JSON.stringify(contactsList, null, 2);
+    fs.writeFile(contactsPath, convertedContact);
+
+    return delContact;
   } catch (error) {
     console.error(error);
   }
@@ -36,11 +49,21 @@ async function removeContact(contactId) {
 
 async function addContact(name, email, phone) {
   try {
-    const id = uuidv4();
-    contacts.push({ id, name, email, phone });
-    const convertedContact = JSON.stringify(contacts, null, 2);
-    await fs.writeFile(contactsPath, convertedContact);
-    return { id, name, email, phone };
+    const contactsList = await contactsParse();
+
+    const newContact = {
+      id: uuidv4(),
+      name,
+      email,
+      phone,
+    };
+
+    contactsList.push(newContact);
+
+    const convertedContact = JSON.stringify(contactsList, null, 2);
+    fs.writeFile(contactsPath, convertedContact);
+
+    return newContact;
   } catch (error) {
     console.error(error);
   }
